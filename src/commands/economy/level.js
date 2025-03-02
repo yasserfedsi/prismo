@@ -57,7 +57,7 @@ module.exports = {
 
       // ✅ Load Background Image (Optional: You can replace it with a solid color)
       const background = await loadImage(
-        "https://static.vecteezy.com/system/resources/thumbnails/022/600/920/small/blue-pink-red-golden-stage-spotlights-awards-graphics-background-celebration-generative-ai-free-photo.jpeg"
+        "https://img.freepik.com/photos-gratuite/toile-fond-texturee-solide-beton-peint_53876-110679.jpg?t=st=1740932082~exp=1740935682~hmac=c995cd127d0b213b1732f982ca0caedf2e717166cc6efc8fe93d333f0b44cd49&w=1380"
       );
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
