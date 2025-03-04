@@ -4,15 +4,13 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "canvacord": "^5.2.0",
-    "canvas": "^3.1.0",
-    "canvas-senpai": "^2.0.3",
     "discord.js": "^14.15.3",
     "djs-commander": "^0.0.50",
     "dotenv": "^16.4.5",
