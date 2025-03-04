@@ -4,7 +4,7 @@ module.exports = {
   devOnly: true,
   testOnly: true,
   // options: Object[],
-  // deleted: Boolean,
+  deleted: true,
 
   callback: async (client, interaction) => {
     await interaction.deferReply();
