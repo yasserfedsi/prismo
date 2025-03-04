@@ -1,8 +1,8 @@
 const {
   Client,
   Interaction,
-  ApplicationCommandOptionType,
   EmbedBuilder,
+  ApplicationCommandOptionType,
 } = require("discord.js");
 const calculateLevelXp = require("../../utils/calculateLevelXp");
 const Level = require("../../models/levelSchema");
@@ -10,6 +10,10 @@ const Level = require("../../models/levelSchema");
 module.exports = {
   name: "level",
   description: "Shows your/someone's level.",
+  devOnly: false,
+  testOnly: false,
+  deleted: false,
+
   options: [
     {
       name: "target",
@@ -24,11 +28,6 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    if (!interaction.guild) {
-      await interaction.reply("You can only run this command inside a server.");
-      return;
-    }
-
     await interaction.deferReply();
 
     const mentionedUserId = interaction.options.get("target")?.value;
@@ -44,41 +43,44 @@ module.exports = {
       if (!fetchedLevel) {
         await interaction.editReply(
           mentionedUserId
-            ? `${targetUserObj.user.tag} doesn't have any levels yet. Try again when they chat a little more.`
-            : "You don't have any levels yet. Chat a little more and try again."
+            ? `**${targetUserObj.user.tag}** doesn't have any levels yet. Try again when they chat a little more.`
+            : "**You don't have any levels yet.** Chat a little more and try again."
         );
         return;
       }
 
-      // 🔹 Fetch all users' levels
+      // Fetch all users and include those without levels
       let allLevels = await Level.find({
         guildId: interaction.guild.id,
       }).select("userId level xp");
 
-      // 🔹 Sort by Level and XP
+      const allMembers = await interaction.guild.members.fetch();
+      allMembers.forEach((member) => {
+        if (!allLevels.some((lvl) => lvl.userId === member.id)) {
+          allLevels.push({ userId: member.id, level: 0, xp: 0 });
+        }
+      });
+
+      // Sort by level and XP
       allLevels.sort((a, b) =>
         a.level === b.level ? b.xp - a.xp : b.level - a.level
       );
 
-      // 🔹 Find User's Rank
-      let currentRank =
+      // Get user's rank
+      const currentRank =
         allLevels.findIndex((lvl) => lvl.userId === targetUserId) + 1;
 
-      // 🎨 Create Embed
+      // **Creating the Embed**
       const embed = new EmbedBuilder()
-        .setTitle(`🏅 Level Info - ${targetUserObj.user.username}`)
+        .setTitle(`📊 Level Info - ${targetUserObj.user.username}`)
         .setColor("#0099ff")
-        .setThumbnail(targetUserObj.user.displayAvatarURL({ size: 1024 }))
-        .addFields(
-          { name: "🔹 Rank", value: `#${currentRank}`, inline: true },
-          { name: "📈 Level", value: `${fetchedLevel.level}`, inline: true },
-          {
-            name: "⚡ XP",
-            value: `${fetchedLevel.xp} / ${calculateLevelXp(
+        .setThumbnail(targetUserObj.user.displayAvatarURL({ dynamic: true }))
+        .setDescription(
+          `🏆 **Rank:** #${currentRank}\n\n` +
+            `📈 **Level:** ${fetchedLevel.level}\n\n` +
+            `⭐ **XP:** ${fetchedLevel.xp} / ${calculateLevelXp(
               fetchedLevel.level
-            )}`,
-            inline: true,
-          }
+            )} \n\n`
         )
         .setFooter({
           text: `Requested by ${interaction.user.username}`,
@@ -86,12 +88,11 @@ module.exports = {
         })
         .setTimestamp();
 
-      // 🔹 Send Embed
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error("Error fetching user level:", error);
       await interaction.editReply(
-        "An error occurred while fetching the level."
+        "❌ An error occurred while fetching the level."
       );
     }
   },
