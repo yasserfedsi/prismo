@@ -2,13 +2,23 @@ const {
   Client,
   Interaction,
   ApplicationCommandOptionType,
-  AttachmentBuilder,
+  EmbedBuilder,
 } = require("discord.js");
-const { createCanvas, loadImage } = require("canvas"); // ✅ Native Canvas API
 const calculateLevelXp = require("../../utils/calculateLevelXp");
 const Level = require("../../models/levelSchema");
 
 module.exports = {
+  name: "level",
+  description: "Shows your/someone's level.",
+  options: [
+    {
+      name: "target",
+      description: "The user whose level you want to see.",
+      type: ApplicationCommandOptionType.User,
+      required: false,
+    },
+  ],
+
   /**
    * @param {Client} client
    * @param {Interaction} interaction
@@ -21,7 +31,7 @@ module.exports = {
 
     await interaction.deferReply();
 
-    const mentionedUserId = interaction.options.get("target-user")?.value;
+    const mentionedUserId = interaction.options.get("target")?.value;
     const targetUserId = mentionedUserId || interaction.user.id;
 
     try {
@@ -40,66 +50,44 @@ module.exports = {
         return;
       }
 
+      // 🔹 Fetch all users' levels
       let allLevels = await Level.find({
         guildId: interaction.guild.id,
-      }).select("-_id userId level xp");
+      }).select("userId level xp");
 
+      // 🔹 Sort by Level and XP
       allLevels.sort((a, b) =>
         a.level === b.level ? b.xp - a.xp : b.level - a.level
       );
 
+      // 🔹 Find User's Rank
       let currentRank =
         allLevels.findIndex((lvl) => lvl.userId === targetUserId) + 1;
 
-      // ✅ Create Canvas and Set Size
-      const canvas = createCanvas(800, 250);
-      const ctx = canvas.getContext("2d");
+      // 🎨 Create Embed
+      const embed = new EmbedBuilder()
+        .setTitle(`🏅 Level Info - ${targetUserObj.user.username}`)
+        .setColor("#0099ff")
+        .setThumbnail(targetUserObj.user.displayAvatarURL({ size: 1024 }))
+        .addFields(
+          { name: "🔹 Rank", value: `#${currentRank}`, inline: true },
+          { name: "📈 Level", value: `${fetchedLevel.level}`, inline: true },
+          {
+            name: "⚡ XP",
+            value: `${fetchedLevel.xp} / ${calculateLevelXp(
+              fetchedLevel.level
+            )}`,
+            inline: true,
+          }
+        )
+        .setFooter({
+          text: `Requested by ${interaction.user.username}`,
+          iconURL: interaction.user.displayAvatarURL(),
+        })
+        .setTimestamp();
 
-      // ✅ Load Background Image (Optional: You can replace it with a solid color)
-      const background = await loadImage(
-        "https://img.freepik.com/photos-gratuite/toile-fond-texturee-solide-beton-peint_53876-110679.jpg?t=st=1740932082~exp=1740935682~hmac=c995cd127d0b213b1732f982ca0caedf2e717166cc6efc8fe93d333f0b44cd49&w=1380"
-      );
-      ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-      // ✅ Draw Username and Rank
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 30px Arial";
-      ctx.fillText(targetUserObj.user.username, 250, 80);
-      ctx.fillText(`Rank #${currentRank}`, 600, 50);
-
-      // ✅ Draw Level and XP
-      ctx.font = "20px Arial";
-      ctx.fillText(`Level: ${fetchedLevel.level}`, 250, 120);
-      ctx.fillText(
-        `XP: ${fetchedLevel.xp}/${calculateLevelXp(fetchedLevel.level)}`,
-        250,
-        150
-      );
-
-      // ✅ Draw Progress Bar
-      const progressBarWidth = 400;
-      const progress = fetchedLevel.xp / calculateLevelXp(fetchedLevel.level);
-      ctx.fillStyle = "#555";
-      ctx.fillRect(250, 170, progressBarWidth, 20);
-      ctx.fillStyle = "#FFD700"; // Gold color
-      ctx.fillRect(250, 170, progressBarWidth * progress, 20);
-
-      // ✅ Draw User Avatar
-      const avatar = await loadImage(
-        targetUserObj.user.displayAvatarURL({ format: "png", size: 128 })
-      );
-      ctx.beginPath();
-      ctx.arc(100, 125, 75, 0, Math.PI * 2, true);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatar, 25, 50, 150, 150);
-
-      // ✅ Convert Canvas to Image Buffer
-      const attachment = new AttachmentBuilder(canvas.toBuffer(), {
-        name: "rank.png",
-      });
-
-      await interaction.editReply({ files: [attachment] });
+      // 🔹 Send Embed
+      await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error("Error fetching user level:", error);
       await interaction.editReply(
@@ -107,15 +95,4 @@ module.exports = {
       );
     }
   },
-
-  name: "level",
-  description: "Shows your/someone's level.",
-  options: [
-    {
-      name: "target",
-      description: "The user whose level you want to see.",
-      type: ApplicationCommandOptionType.User,
-      required: false,
-    },
-  ],
 };
