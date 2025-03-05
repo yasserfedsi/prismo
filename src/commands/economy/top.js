@@ -1,10 +1,10 @@
 const { Client, Interaction, EmbedBuilder } = require("discord.js");
-const Level = require("../../models/levelSchema");
+const Level = require("../../models/level.model");
 require("dotenv").config();
 
 module.exports = {
   name: "top",
-  description: "Displays the top-ranked users in the server.",
+  description: "Shows the server's top-ranked members.",
   devOnly: false,
   testOnly: false,
   deleted: false,
@@ -17,54 +17,54 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Fetch all users' levels
+      // Fetch all levels from DB
       let allLevels = await Level.find({
         guildId: interaction.guild.id,
       }).select("userId level xp");
 
-      // Fetch all members in the guild
+      // Fetch all members to ensure we include users with no XP
       const allMembers = await interaction.guild.members.fetch();
 
-      // Add all members (even those without levels)
       allMembers.forEach((member) => {
         if (!allLevels.some((lvl) => lvl.userId === member.id)) {
           allLevels.push({ userId: member.id, level: 0, xp: 0 });
         }
       });
 
-      // Remove users with the excluded role (stored in .env)
-      const excludedRoleId = process.env.EXCLUDED_ROLE_ID;
-      if (excludedRoleId) {
-        allLevels = allLevels.filter((lvl) => {
-          const member = interaction.guild.members.cache.get(lvl.userId);
-          return member && !member.roles.cache.has(excludedRoleId);
-        });
-      }
-
-      // Sort leaderboard by level and XP
+      // Sort members by level and XP
       allLevels.sort((a, b) =>
         a.level === b.level ? b.xp - a.xp : b.level - a.level
       );
 
-      // Take the top 10 members
-      const topUsers = allLevels.slice(0, 10);
+      // Remove users with the excluded role (from .env)
+      const excludedRoleId = process.env.EXCLUDED_ROLE_ID;
+      if (excludedRoleId) {
+        allLevels = allLevels.filter(
+          (lvl) =>
+            !interaction.guild.members.cache
+              .get(lvl.userId)
+              ?.roles.cache.has(excludedRoleId)
+        );
+      }
 
       // Generate leaderboard text
+      const topUsers = allLevels.slice(0, 10); // Show only the top 10 users
       let leaderboardText = topUsers
         .map((lvl, index) => {
           const member = interaction.guild.members.cache.get(lvl.userId);
-          return `**${index + 1}.** ${
-            member ? member.user.tag : "Unknown User"
-          } - XP: **${lvl.xp}**`;
+          return `**#${index + 1}** ${
+            member ? member.toString() : "Unknown User"
+          } **XP:** \`${lvl.xp}\``;
         })
         .join("\n");
 
-      if (!leaderboardText) leaderboardText = "No users have been ranked yet.";
+      if (leaderboardText.length === 0)
+        leaderboardText = "No leaderboard data available.";
 
       // Create Embed
       const embed = new EmbedBuilder()
         .setTitle("🏆 Server Leaderboard")
-        .setColor("#0099ff")
+        .setColor("#FFD700")
         .setDescription(leaderboardText)
         .setFooter({
           text: `Requested by ${interaction.user.username}`,
@@ -72,12 +72,11 @@ module.exports = {
         })
         .setTimestamp();
 
-      // Send Embed
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
       await interaction.editReply(
-        "An error occurred while fetching the leaderboard."
+        "❌ An error occurred while fetching the leaderboard."
       );
     }
   },
