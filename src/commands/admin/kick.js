@@ -18,7 +18,6 @@ module.exports = {
       required: false,
     },
   ],
-  deleted: false,
 
   callback: async (client, interaction) => {
     await interaction.deferReply();
