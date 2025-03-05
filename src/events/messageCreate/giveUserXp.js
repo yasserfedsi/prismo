@@ -1,6 +1,6 @@
 const { Client, Message } = require("discord.js");
 const calculateLevelXp = require("../../utils/calculateLevelXp");
-const Level = require("../../models/levelSchema");
+const Level = require("../../models/level.model");
 const cooldowns = new Set();
 
 function getRandomXp(min, max) {
