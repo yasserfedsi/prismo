@@ -1,3 +1,5 @@
+const { PermissionFlagsBits } = require("discord.js");
+
 module.exports = {
   name: "ban",
   description: "Ban a user",
@@ -18,34 +20,37 @@ module.exports = {
       required: false,
     },
   ],
-  deleted: false,
-
   callback: async (client, interaction) => {
     await interaction.deferReply();
+
+    // Check if command is used in a server
+    if (!interaction.guild) {
+      return interaction.editReply(
+        "This command can only be used in a server."
+      );
+    }
+
+    // Check if the user executing the command has the BAN_MEMBERS permission
+    if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+      return interaction.editReply(
+        "You do not have permission to ban members."
+      );
+    }
 
     const targetUser = interaction.options.getUser("target");
     const reason =
       interaction.options.getString("reason") || "No reason provided";
-    const member = interaction.guild.members.resolve(targetUser.id);
-
-    if (!member) {
-      return interaction.editReply("User not found in this server.");
-    }
-
-    if (!member.bannable) {
-      return interaction.editReply(
-        "I cannot ban this user. They may have a higher role or special permissions."
-      );
-    }
 
     try {
-      await member.ban({ reason });
+      await interaction.guild.bans.create(targetUser.id, { reason });
       interaction.editReply(
-        `${targetUser.tag} has been banned. Reason: ${reason}`
+        `${targetUser.toString()} has been banned. Reason: ${reason}`
       );
     } catch (error) {
       console.error(error);
-      interaction.editReply("An error occurred while trying to ban the user.");
+      interaction.editReply(
+        `Failed to ban ${targetUser.toString()}. Check bot permissions and role hierarchy.`
+      );
     }
   },
 };
