@@ -36,16 +36,16 @@ module.exports = {
         a.level === b.level ? b.xp - a.xp : b.level - a.level
       );
 
-      // Remove users with the excluded role (from .env)
+      // Exclude bot accounts and users with the excluded role
       const excludedRoleId = process.env.EXCLUDED_ROLE_ID;
-      if (excludedRoleId) {
-        allLevels = allLevels.filter(
-          (lvl) =>
-            !interaction.guild.members.cache
-              .get(lvl.userId)
-              ?.roles.cache.has(excludedRoleId)
+      allLevels = allLevels.filter((lvl) => {
+        const member = interaction.guild.members.cache.get(lvl.userId);
+        return (
+          member &&
+          !member.user.bot &&
+          (!excludedRoleId || !member.roles.cache.has(excludedRoleId))
         );
-      }
+      });
 
       // Generate leaderboard text
       const topUsers = allLevels.slice(0, 10); // Show only the top 10 users
