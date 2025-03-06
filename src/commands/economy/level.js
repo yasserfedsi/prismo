@@ -8,7 +8,7 @@ const calculateLevelXp = require("../../utils/calculateLevelXp");
 const Level = require("../../models/level.model");
 
 module.exports = {
-  name: "level",
+  name: "rank",
   description: "Shows your/someone's level.",
   devOnly: false,
   testOnly: false,
