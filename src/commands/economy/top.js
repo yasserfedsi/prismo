@@ -54,7 +54,7 @@ module.exports = {
           const member = interaction.guild.members.cache.get(lvl.userId);
           return `**#${index + 1}** ${
             member ? member.toString() : "Unknown User"
-          } **XP:** \`${lvl.xp}\``;
+          } **XP:** \`${lvl.xp}\` **Level:** \`${lvl.level}\``;
         })
         .join("\n");
 
