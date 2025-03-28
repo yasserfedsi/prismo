@@ -15,6 +15,7 @@
     "djs-commander": "^0.0.50",
     "dotenv": "^16.4.5",
     "eslint": "^9.6.0",
+    "express": "^4.21.2",
     "mongodb": "^6.8.0",
     "mongoose": "^8.11.0",
     "ms": "^2.1.3",
